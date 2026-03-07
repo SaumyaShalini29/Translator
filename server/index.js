@@ -24,19 +24,29 @@ const allowedOriginPatterns = [
   /^http:\/\/127\.0\.0\.1:\d+$/,
 ]
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true)
+const allowedOriginsFromEnv = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
 
-      const isAllowed = allowedOriginPatterns.some((pattern) => pattern.test(origin))
-      if (isAllowed) return callback(null, true)
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`))
-    },
-    credentials: true,
-  }),
-)
+    const matchesLocalPattern = allowedOriginPatterns.some((pattern) => pattern.test(origin))
+    const matchesEnvOrigin = allowedOriginsFromEnv.includes(origin)
+
+    if (matchesLocalPattern || matchesEnvOrigin || allowedOriginsFromEnv.length === 0) {
+      return callback(null, true)
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`))
+  },
+  credentials: true,
+}
+
+app.use(cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
 
 app.use(express.json())
 
