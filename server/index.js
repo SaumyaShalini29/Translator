@@ -22,6 +22,7 @@ connectDB()
 const allowedOriginPatterns = [
   /^http:\/\/localhost:\d+$/,
   /^http:\/\/127\.0\.0\.1:\d+$/,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
 ]
 
 const allowedOriginsFromEnv = (process.env.CORS_ORIGINS || '')
@@ -29,20 +30,31 @@ const allowedOriginsFromEnv = (process.env.CORS_ORIGINS || '')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
+const defaultDeployedOrigins = [
+  'https://translator-bu7p.vercel.app',
+]
+
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true)
 
     const matchesLocalPattern = allowedOriginPatterns.some((pattern) => pattern.test(origin))
     const matchesEnvOrigin = allowedOriginsFromEnv.includes(origin)
+    const matchesDefaultDeployedOrigin = defaultDeployedOrigins.includes(origin)
 
-    if (matchesLocalPattern || matchesEnvOrigin || allowedOriginsFromEnv.length === 0) {
+    if (
+      matchesLocalPattern
+      || matchesEnvOrigin
+      || matchesDefaultDeployedOrigin
+      || allowedOriginsFromEnv.length === 0
+    ) {
       return callback(null, true)
     }
 
     return callback(new Error(`CORS blocked for origin: ${origin}`))
   },
   credentials: true,
+  optionsSuccessStatus: 200,
 }
 
 app.use(cors(corsOptions))
